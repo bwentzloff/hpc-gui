@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
+    <title>HPC GUI</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="./css/admin.css">
+  </head>
+  <body>
+    <div id="app" class="flex h-screen overflow-hidden">
+        <aside class="absolute left-0 top-0 z-9999 flex h-screen w-72.5 flex-col overflow-y-hidden bg-black duration-300 ease-linear dark:bg-boxdark lg:static lg:translate-x-0 -translate-x-full">
+            <div class="flex items-center justify-between gap-2 px-6 py-5.5 lg:py-6.5">
+                <h1 class="text-3xl font-bold">HPC GUI</h1>
+            </div>
+            <div class="no-scrollbar flex flex-col overflow-y-auto duration-300 ease-linear">
+                <nav class="mt-5 py-4 px-4 lg:mt-9 lg:px-6">
+                    <div>
+                        <h3 class="mb-4 ml-4 text-sm font-medium text-bodydark2">Pending</h3>
+                        <ul class="mb-6 flex flex-col gap-1.5">
+                            <template v-for="(job,index) in activeJobs">
+                                <li v-if="job[4] == 'PD'">
+                                    <a  class="group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium text-bodydark1 duration-300 ease-in-out dark:hover:bg-meta-4">{{ job[0] }}</a>
+                                </li>
+                            </template>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="mb-4 ml-4 text-sm font-medium text-bodydark2">Running</h3>
+                        <ul class="mb-6 flex flex-col gap-1.5">
+                            <template v-for="(job,index) in activeJobs">
+                                <li v-if="job[4] == 'R'">
+                                    <a  @click="showDetail(index)" class="cursor-pointer group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4">{{ job[0] }}<br /><span class="text-xs">{{ job[5] }}</span></a>
+                                </li>
+                            </template>
+                        </ul>
+                    </div>
+                </nav>
+            </div>
+        </aside>
+        <div class="relative flex flex-1 flex-col overflow-y-auto overflow-x-hidden">
+            <main>
+                <div class="mx-auto max-w-screen-2xl p-4 md:p-6 2xl:p-10">
+                    <div class="grid grid-cols-1 gap-9 sm:grid-cols-2">
+                        <div v-if="message" class="flex col-span-2 w-full border-l-6 border-warning bg-warning bg-opacity-[15%] px-7 py-8 shadow-md dark:bg-[#1B1B24] dark:bg-opacity-30 md:p-9">
+                            <div class="w-full">{{ message }}</div>
+                        </div>
+                        <div class="flex flex-col gap-9">
+                            <div v-if="!loggedIn" class="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
+                                <div class="border-b border-stroke py-4 px-6.5 dark:border-strokedark">
+                                    <h3 class="font-medium text-black dark:text-white">
+                                      Login
+                                    </h3>
+                                </div>
+                                <div class="flex flex-col gap-5.5 p-6.5">
+                                    <div>
+                                      <label class="mb-3 block text-sm font-medium text-black dark:text-white">
+                                        Endpoint
+                                      </label>
+                                      <input v-model="creds.endpoint" type="text" class="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-3 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary">
+                                    </div>
+                
+                                    <div>
+                                      <label class="mb-3 block text-sm font-medium text-black dark:text-white">
+                                        Username
+                                      </label>
+                                      <input v-model="creds.username" type="text" class="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-3 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:bg-form-input">
+                                    </div>
+                
+                                    <div>
+                                      <label class="mb-3 block text-sm font-medium text-black dark:text-white">
+                                        Password
+                                      </label>
+                                      <input v-model="creds.password" type="password"class="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-3 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary dark:disabled:bg-black">
+                                    </div>
+                                    <div>
+                                        <button @click="login()" class="flex w-full justify-center rounded bg-primary p-3 font-medium text-gray">
+                                            Login
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div v-if="loggedIn" class="text-left flex col-span-2 w-full border-l-6 border-warning bg-black bg-opacity-[15%] px-7 py-8 shadow-md dark:bg-black dark:bg-opacity-30 md:p-9">
+                            <pre class="text-left">{{ consoleOutput }}</pre>
+                        </div>
+
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+    <script>
+        const { createApp } = Vue
+            createApp({
+                data() {
+                    return {
+                        message: '',
+                        creds: {
+                            username: '',
+                            password: '',
+                            endpoint: 'hpclogin.memphis.edu'
+                        },
+                        loggedIn: false,
+                        activeJobs: [],
+                        consoleOutput: ''
+                    }
+                },
+                async mounted() {
+                    window.api.send("toMain", {
+                        action: 'getCreds'
+                    });
+                    window.api.receive("sendCreds", (data) => {
+                        console.log('sent creds')
+                        console.log(data)
+                    });
+                    await window.api.receive("fromMain", (data) => {
+                        var structured_data = []
+                        var array_index = 0
+                        this.activeJobs = []
+                        console.log(this.activeJobs)
+                        //structured_data[0] = []
+                        var elem_id = 0
+                        var job_id = 0
+                        var temp_obj = []
+                        for (const elem of data) {
+                        if (elem_id > 7) {
+                            
+                            if (( (elem_id) % 8) == 0 && elem_id >= 8) {
+                                array_index++;
+                                job_id = elem
+                                if (elem !== 0 && job_id !== 0 && job_id !== '') {
+                                this.activeJobs.push(temp_obj)
+                                temp_obj = []
+                                }
+                                job_id = elem
+                            }
+                            if (elem !== 0 && job_id !== 0 && job_id !== '' && elem_id >= 8) {
+                                temp_obj.push(elem)
+                                
+                            }
+                        }
+                        
+                        elem_id++;
+                        }
+                        this.activeJobs.push(temp_obj)
+                        this.message = ''
+                        this.loggedIn = true
+                    });
+                    window.api.receive("fromMainShowTail", (data) => {
+                        this.consoleOutput = data
+                        console.log(data)
+                        this.message = ''
+                    });
+                },
+                methods: {
+                    sendCreds() {
+                        window.api.send("toMain", {
+                            action: 'login',
+                            endpoint: this.creds.endpoint,
+                            username: this.creds.username,
+                            password: this.creds.password
+                        });
+                    },
+                    login() {
+                        this.message = "logging in..."
+                        this.sendCreds()
+                        window.setInterval(() => {
+                            this.sendCreds()
+                        }, 10000)
+                    },
+                    showDetail(jobIndex) {
+                        this.consoleOutput = ''
+                        this.message = 'Loading slurm tail...'
+                        window.api.send("toMain", {
+                            action: "findSlurm",
+                            jobId: this.activeJobs[jobIndex][0],
+                            endpoint: this.creds.endpoint,
+                            username: this.creds.username,
+                            password: this.creds.password
+                        });
+                    }
+                }
+    }).mount('#app')
+    </script>
+  </body>
+</html>
