@@ -104,7 +104,7 @@ const createWindow = () => {
           });
           my_jobs = []
           output = ''
-          ssh.exec("printf '%s\n' $(squeue -u bwntzlff)", {
+          ssh.exec("printf '%s\n' $(squeue -u "+creds.username+")", {
             out: function(stdout) {
                 output = output + stdout
                 var my_jobs = output.split('\n')
