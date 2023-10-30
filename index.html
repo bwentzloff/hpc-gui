@@ -65,14 +65,14 @@
                                       <label class="mb-3 block text-sm font-medium text-black dark:text-white">
                                         Username
                                       </label>
-                                      <input v-model="creds.username" type="text" class="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-3 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:bg-form-input">
+                                      <input @keyup.enter="login()" v-model="creds.username" type="text" class="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-3 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:bg-form-input">
                                     </div>
                 
                                     <div>
                                       <label class="mb-3 block text-sm font-medium text-black dark:text-white">
                                         Password
                                       </label>
-                                      <input v-model="creds.password" type="password"class="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-3 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary dark:disabled:bg-black">
+                                      <input @keyup.enter="login()" v-model="creds.password" type="password"class="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-3 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary dark:disabled:bg-black">
                                     </div>
                                     <div>
                                         <button @click="login()" class="flex w-full justify-center rounded bg-primary p-3 font-medium text-gray">
